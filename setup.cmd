@@ -1,5 +1,6 @@
 CMD Get compose file:
-wget https://github.com/zhaopinglu/docker-spark/blob/master/docker-compose-spark-hadoop.yml
+CMD Note: You might need proxy to access below file.
+wget https://raw.githubusercontent.com/zhaopinglu/docker-spark/master/docker-compose-spark-hadoop.yml
 
 CMD Start up
 docker network create spark-net
