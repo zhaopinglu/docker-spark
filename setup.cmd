@@ -4,9 +4,9 @@ wget https://raw.githubusercontent.com/zhaopinglu/docker-spark/master/docker-com
 
 REM Start up
 docker network create spark-net
-docker-compose -f docker-compose-spark-hadoop.yaml up -d
+docker-compose -f docker-compose-spark-hadoop.yml up -d
 
 REM Shut down
-docker-compose -f docker-compose-spark-hadoop.yaml down
+docker-compose -f docker-compose-spark-hadoop.yml down
 docker network rm spark-net
 
