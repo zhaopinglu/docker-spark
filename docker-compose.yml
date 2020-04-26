@@ -1,19 +1,139 @@
-version: '2'
+version: "3.8"
+
+
+volumes:
+  sparknamenode:
+  sparkdatanode:
+
+networks:
+  spark-net:
+    name: spark-net
+    ipam:
+      #driver: bridge
+      config:
+        - subnet: "192.168.3.0/24"
+
 services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8
+    container_name: namenode
+    hostname: namenode
+    volumes:
+      - sparknamenode:/hadoop/dfs/name
+    environment:
+      CLUSTER_NAME: test
+      CORE_CONF_fs_defaultFS: hdfs://namenode:8020
+    healthcheck:
+      interval: 5s
+      retries: 100 
+    ports:
+      - 50070:50070
+      - 9870:9870
+      - 8020:8020
+    networks:
+      spark-net:
+        ipv4_address: 192.168.3.2
+      
+      
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8
+    container_name: datanode
+    hostname: datanode
+    volumes:
+      - sparkdatanode:/hadoop/dfs/data
+    environment:
+      CORE_CONF_fs_defaultFS: hdfs://namenode:8020
+      SERVICE_PRECONDITION: "namenode:50070"
+    depends_on:
+      - namenode
+    healthcheck:
+      interval: 5s
+      retries: 100 
+    ports:
+      - 9864:9864
+      - 50010:50010
+      - 50020:50020
+      - 50075:50075
+    networks:
+      spark-net:
+        ipv4_address: 192.168.3.3
+
+
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop2.7.4-java8
+    container_name: resmgr
+    hostname: resmgr
+    depends_on:
+      - namenode
+    environment:
+      CLUSTER_NAME: test
+      CORE_CONF_fs_defaultFS: hdfs://namenode:8020
+    healthcheck:
+      interval: 5s
+      retries: 100 
+    ports:
+      - 8088:8088
+      - 8030:8030
+      - 8031:8031
+      - 8032:8032
+      - 8033:8033
+    networks:
+      spark-net:
+        ipv4_address: 192.168.3.4
+
+      
   spark-master:
     image: bde2020/spark-master:2.4.5-hadoop2.7
-    container_name: spark-master
+    container_name: master
+    hostname: master
     ports:
-      - "8080:8080"
-      - "7077:7077"
+      - 8080:8080
+      - 7077:7077
     environment:
-      - INIT_DAEMON_STEP=setup_spark
+      CORE_CONF_fs_defaultFS: hdfs://namenode:8020
+      SERVICE_PRECONDITION: "namenode:50070 datanode:50075"
+    depends_on:
+      - namenode
+      - datanode
+    healthcheck:
+      interval: 5s
+      retries: 100 
+    networks:
+      spark-net:
+        ipv4_address: 192.168.3.5
+
+
   spark-worker-1:
     image: bde2020/spark-worker:2.4.5-hadoop2.7
-    container_name: spark-worker-1
-    depends_on:
-      - spark-master
+    container_name: worker1
+    hostname: worker1
     ports:
-      - "8081:8081"
+      - 8081:8081
     environment:
       - "SPARK_MASTER=spark://spark-master:7077"
+    environment:
+      CORE_CONF_fs_defaultFS: hdfs://namenode:8020
+      SERVICE_PRECONDITION: "spark-master:8080"
+    networks:
+      spark-net:
+        ipv4_address: 192.168.3.6
+
+
+  spark-worker-2:
+    image: bde2020/spark-worker:2.4.5-hadoop2.7
+    container_name: worker2
+    hostname: worker2
+    ports:
+      - 8082:8082
+    environment:
+      - "SPARK_MASTER=spark://spark-master:7077"
+    environment:
+      CORE_CONF_fs_defaultFS: hdfs://namenode:8020
+      SERVICE_PRECONDITION: "spark-master:8080"
+      SPARK_WORKER_WEBUI_PORT: 8082
+    networks:
+      spark-net:
+        ipv4_address: 192.168.3.7
+
+
+    
