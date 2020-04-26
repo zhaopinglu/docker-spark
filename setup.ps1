@@ -1,8 +1,10 @@
 # Note: Might need proxy to access below file.
 wget https://raw.githubusercontent.com/zhaopinglu/docker-spark/master/docker-compose-spark-hadoop.yml -O docker-compose-spark-hadoop.yml
 
+docker network rm spark-net
+docker network create -d bridge --subnet=192.168.3.0/24 --gateway 192.168.3.1 -o com.docker.network.bridge.enable_icc=true -o com.docker.network.bridge.enable_ip_masquerade=true spark-net
+
 # Start up
-docker network create spark-net -d nat
 docker-compose -f docker-compose-spark-hadoop.yml up -d
 
 # Shut down
